@@ -15,7 +15,7 @@
     "knplabs/github-api": "^2.9"
   },
   "bin": [
-    "bin/githubsync"
+    "bin/githubsync.php"
   ],
   "autoload": {
     "psr-4": {
