@@ -11,6 +11,7 @@ for ($i = 0; $i < 4; ++$i) {
     $path = $base . '/' . $autoload;
     if ($loaded = file_exists($path)) {
         require_once $path;
+        break;
     }
 }
 
