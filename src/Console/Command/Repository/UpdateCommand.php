@@ -66,8 +66,13 @@ class UpdateCommand extends Repository
                                 'force' => $input->getOption('force'),
                             ]);
                         } catch (RuntimeException $e) {
+                            $extraMessage = '';
+                            // not found can be a generic "permission denied" error
+                            if ($e->getMessage() === 'Not Found') {
+                                $extraMessage = 'Make sure you are correcly authenticated with an access token with the public_repo permission';
+                            }
                             // not a fast forward
-                            $output->writeln('    <error>' . $e->getMessage() . '</error>');
+                            $output->writeln('    <error>' . $e->getMessage() . ' ' . $extraMessage . '</error>');
                         }
                     }
                 }
