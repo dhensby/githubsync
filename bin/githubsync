@@ -2,17 +2,22 @@
 <?php
 
 error_reporting(E_ALL);
+$loaded = false;
+$base = __DIR__;
+$autoload = 'vendor/autoload.php';
 
-foreach(array(
-    'vendor/autoload.php',
-    '../vendor/autoload.php',
-    '../../vendor/autoload.php',
-) as $dir) {
-    if (file_exists($dir)) {
-        require_once $dir;
+for ($i = 0; $i < 4; ++$i) {
+    $base = dirname($base);
+    $path = $base . '/' . $autoload;
+    if ($loaded = file_exists($path)) {
+        require_once $path;
     }
 }
 
+if (!$loaded) {
+    throw new RuntimeException("Couldn't find composer autoload file");
+}
+unset($loaded, $base, $autoload, $i, $path);
 $application = new \Dhensby\GitHubSync\Console\Application();
 
 $application->run();
