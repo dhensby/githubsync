@@ -16,6 +16,7 @@ class Repository extends Command
 
         $this
             ->addArgument('organisation', InputArgument::REQUIRED, 'The organisation to list the repos of')
+            ->addArgument('repository', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Whitelist of repositories (if none provided assume all)')
             ->addOption('only-forks', 'o', InputOption::VALUE_NONE, 'Only return forks');
     }
 
@@ -26,7 +27,8 @@ class Repository extends Command
         $repos = $pager->fetchAll($client->api('user'), 'repositories', [$this->getOrganisation()]);
         $onlyForks = $this->getOnlyForks();
         return array_filter($repos, function ($repo) use ($onlyForks) {
-            return !$onlyForks || !empty($repo['fork']);
+            $whitelistRepos = $this->getInput()->getArgument('repository');
+            return (empty($whitelistRepos) || in_array($repo['name'], $whitelistRepos)) && (!$onlyForks || !empty($repo['fork']));
         });
     }
 

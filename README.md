@@ -8,7 +8,10 @@ Sync your forked repositories with their upstream parents.
 
 ## Usage
 
-`githubsync repository:update [org/username]`
+`githubsync repository:update <organisation/username> [<repository>...]`
+
+Supply your GitHub username or organisation name and optionally the repositories you want to update (if none provided
+assume all forked repositories).
 
 ### Options
 
