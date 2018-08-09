@@ -8,6 +8,7 @@ use Github\ResultPager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class UpdateCommand extends Repository
 {
@@ -54,6 +55,7 @@ class UpdateCommand extends Repository
                         continue;
                     }
                     $force = false;
+                    $attemptMerge = false;
                     $repoBranch = $repoBranches[$parentBranch['name']];
                     if ($parentBranch['commit']['sha'] !== $repoBranch['commit']['sha']) {
                         $comparedCommits = $client->api('repos')->commits()->compare(
@@ -65,8 +67,26 @@ class UpdateCommand extends Repository
                         if (
                             $comparedCommits['status'] == 'behind' ||
                             ($force = $comparedCommits['status'] == 'diverged' && $this->getForce()) ||
-                            ($force = $comparedCommits['status'] == 'ahead' && $this->getRewind())
+                            ($force = $comparedCommits['status'] == 'ahead' && $this->getRewind()) ||
+                            $input->isInteractive()
                         ) {
+                            if (!$force && $input->isInteractive() && ($comparedCommits['status'] == 'diverged' || $comparedCommits['status'] == 'ahead')) {
+                                $helper = $this->getHelper('question');
+                                $question = new ConfirmationQuestion(sprintf(
+                                    '  Branch %s %s %s; would you like to discard your changes? [y, N] ',
+                                    $repoBranch['name'],
+                                    $comparedCommits['status'] == 'diverged' ? 'has' : 'is',
+                                    $comparedCommits['status']
+                                ), false);
+                                if ($helper->ask($input, $output, $question)) {
+                                    $force = true;
+                                    $attemptMerge = true;
+                                }
+                            } else {
+                                $attemptMerge = true;
+                            }
+                        }
+                        if ($attemptMerge) {
                             $message = sprintf(
                                 '  - %s branch %s (%s...%s)',
                                 $comparedCommits['status'] == 'ahead' ? 'Rewinding' : 'Updating',
