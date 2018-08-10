@@ -2,6 +2,7 @@
 
 namespace Dhensby\GitHubSync\Console\Command\Repository;
 
+use Carbon\Carbon;
 use Dhensby\GitHubSync\Console\Command\Repository;
 use Github\Exception\RuntimeException;
 use Github\ResultPager;
@@ -164,10 +165,15 @@ class UpdateCommand extends Repository
         if ($output->isDebug()) {
             $limits = $client->api('rate_limit')->getRateLimits();
             $output->writeln(sprintf(
-                '<info>%s requests remaining until %s</info>',
+                '<info>%s requests remaining for the next %s</info>',
                 $limits['resources']['core']['remaining'],
-                (new \DateTime())->setTimestamp($limits['resources']['core']['reset'])->format('c'))
-            );
+                Carbon::now()->diffForHumans(
+                    Carbon::createFromTimestamp($limits['resources']['core']['reset']),
+                    true,
+                    false,
+                    2
+                )
+            ));
         }
     }
 
