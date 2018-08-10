@@ -83,7 +83,7 @@ class UpdateCommand extends Repository
                             if (!$force && $input->isInteractive() && ($comparedCommits['status'] == 'diverged' || $comparedCommits['status'] == 'ahead')) {
                                 $helper = $this->getHelper('question');
                                 $question = new ConfirmationQuestion(sprintf(
-                                    '  Branch %s %s %s; would you like to discard your changes? [y, N] ',
+                                    '  <question>Branch %s %s %s; would you like to discard your changes?</question> [y, N] ',
                                     $repoBranch['name'],
                                     $comparedCommits['status'] == 'diverged' ? 'has' : 'is',
                                     $comparedCommits['status']
