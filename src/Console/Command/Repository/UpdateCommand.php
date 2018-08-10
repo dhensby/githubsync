@@ -161,6 +161,14 @@ class UpdateCommand extends Repository
                 }
             }
         }
+        if ($output->isDebug()) {
+            $limits = $client->api('rate_limit')->getRateLimits();
+            $output->writeln(sprintf(
+                '<info>%s requests remaining until %s</info>',
+                $limits['resources']['core']['remaining'],
+                (new \DateTime())->setTimestamp($limits['resources']['core']['reset'])->format('c'))
+            );
+        }
     }
 
     public function getOnlyForks()
