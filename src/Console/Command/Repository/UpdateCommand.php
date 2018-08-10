@@ -58,12 +58,22 @@ class UpdateCommand extends Repository
                     $attemptMerge = false;
                     $repoBranch = $repoBranches[$parentBranch['name']];
                     if ($parentBranch['commit']['sha'] !== $repoBranch['commit']['sha']) {
-                        $comparedCommits = $client->api('repos')->commits()->compare(
-                            $this->getOrganisation(),
-                            $repo['name'],
-                            $parentBranch['commit']['sha'],
-                            $repoBranch['commit']['sha']
-                        );
+                        try {
+                            $comparedCommits = $client->api('repos')->commits()->compare(
+                                $this->getOrganisation(),
+                                $repo['name'],
+                                $parentBranch['commit']['sha'],
+                                $repoBranch['commit']['sha']
+                            );
+                        } catch (RuntimeException $e) {
+                            if (strpos($e->getMessage(), 'No common ancestor') !== false) {
+                                $comparedCommits = [
+                                    'status' => 'diverged',
+                                    'ahead_by' => null,
+                                    'behind_by' => null,
+                                ];
+                            }
+                        }
                         if (
                             $comparedCommits['status'] == 'behind' ||
                             ($force = $comparedCommits['status'] == 'diverged' && $this->getForce()) ||
@@ -136,6 +146,12 @@ class UpdateCommand extends Repository
                                         '%d commit%s behind',
                                         $comparedCommits['behind_by'],
                                         $comparedCommits['behind_by'] == 1 ? '' : 's'
+                                    );
+                                }
+                                if (!isset($comparedCommits['ahead_by']) && !isset($comparedCommits['behind_by'])) {
+                                    $message = sprintf('No common ancestor (%s...%s)',
+                                        substr($repoBranch['commit']['sha'], 0, 9),
+                                        substr($parentBranch['commit']['sha'], 0, 9)
                                     );
                                 }
                                 $output->writeln('    ' . $message);
