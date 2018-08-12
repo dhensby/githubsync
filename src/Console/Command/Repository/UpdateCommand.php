@@ -19,6 +19,7 @@ class UpdateCommand extends Repository
         $this
             ->setName('repository:update')
             ->setDescription('Update your forked repository from a parent repo')
+            ->addOption('dry-run', 'd', InputOption::VALUE_NONE, 'Don\'t actually update the repository')
             ->addOption('add-missing', 'm', InputOption::VALUE_NONE, 'Add branches that are in the parent but missing from the origin')
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force updates of branches when they have diverged (this will remove any custom changes pushed to the branch')
             ->addOption('rewind', 'r', InputOption::VALUE_NONE, 'Allow rewinding a branch')
@@ -49,10 +50,12 @@ class UpdateCommand extends Repository
                 if (($update = array_key_exists($parentBranch['name'], $repoBranches)) || $input->getOption('add-missing')) {
                     if (!$update) {
                         $output->writeln('  - Adding missing branch ' . $parentBranch['name']);
-                        $client->api('git')->references()->create($this->getOrganisation(), $repo['name'], [
-                            'ref' => 'refs/heads/' . $parentBranch['name'],
-                            'sha' => $parentBranch['commit']['sha'],
-                        ]);
+                        if ($this->getDryRun()) {
+                            $client->api('git')->references()->create($this->getOrganisation(), $repo['name'], [
+                                'ref' => 'refs/heads/' . $parentBranch['name'],
+                                'sha' => $parentBranch['commit']['sha'],
+                            ]);
+                        }
                         continue;
                     }
                     $force = false;
@@ -110,10 +113,12 @@ class UpdateCommand extends Repository
                             }
                             $output->writeln($message);
                             try {
-                                $client->api('git')->references()->update($this->getOrganisation(), $repo['name'], 'heads/' . $repoBranch['name'], [
-                                    'sha' => $parentBranch['commit']['sha'],
-                                    'force' => $force,
-                                ]);
+                                if (!$this->getDryRun()) {
+                                    $client->api('git')->references()->update($this->getOrganisation(), $repo['name'], 'heads/' . $repoBranch['name'], [
+                                        'sha' => $parentBranch['commit']['sha'],
+                                        'force' => $force,
+                                    ]);
+                                }
                             } catch (RuntimeException $e) {
                                 $extraMessage = '';
                                 // not found can be a generic "permission denied" error
@@ -190,5 +195,10 @@ class UpdateCommand extends Repository
     public function getRewind()
     {
         return $this->getInput()->getOption('rewind');
+    }
+
+    public function getDryRun()
+    {
+        return $this->getInput()->getOption('dry-run');
     }
 }
