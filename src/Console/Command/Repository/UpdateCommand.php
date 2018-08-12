@@ -76,6 +76,8 @@ class UpdateCommand extends Repository
                                     'ahead_by' => null,
                                     'behind_by' => null,
                                 ];
+                            } else {
+                                throw $e;
                             }
                         }
                         if (
