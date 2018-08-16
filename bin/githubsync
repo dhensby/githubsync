@@ -3,27 +3,28 @@
 
 error_reporting(E_ALL);
 
-$loaded = false;
-$base = __DIR__;
-$autoload = 'vendor/autoload.php';
+// Sandbox the autoload finder so there aren't any variables leaked into global scope
+call_user_func(function () {
+    $loaded = false;
+    $base = __DIR__;
+    $autoload = 'vendor/autoload.php';
 
-// Search for the autoload by traversing all parent directories
-while ($base && basename($base) !== $base) {
-    $path = $base . '/' . $autoload;
-    if ($loaded = file_exists($path)) {
-        require_once $path;
-        break;
+    // Search for the autoload by traversing all parent directories
+    while ($base && basename($base) !== $base) {
+        $path = $base . '/' . $autoload;
+        if ($loaded = file_exists($path)) {
+            require_once $path;
+            break;
+        }
+        $base = dirname($base);
     }
-    $base = dirname($base);
-}
 
-if (!$loaded) {
-    $binName = isset($_SERVER['argv'][0]) ? $_SERVER['argv'][0] : 'cow';
-    fwrite(STDERR, "$binName was unable to located the vendor/autoload.php file.\n");
-    fwrite(STDERR, "Please make sure you've installed the composer dependencies by running composer install\n");
-    exit(1);
-}
-unset($loaded, $base, $autoload, $loaded, $path, $binName);
-$application = new \Dhensby\GitHubSync\Console\Application();
+    if (!$loaded) {
+        $binName = isset($_SERVER['argv'][0]) ? $_SERVER['argv'][0] : 'cow';
+        fwrite(STDERR, "$binName was unable to located the vendor/autoload.php file.\n");
+        fwrite(STDERR, "Please make sure you've installed the composer dependencies by running composer install\n");
+        exit(1);
+    }
+});
 
-$application->run();
+(new \Dhensby\GitHubSync\Console\Application())->run();
