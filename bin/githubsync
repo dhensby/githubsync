@@ -18,7 +18,10 @@ while ($base && basename($base) !== $base) {
 }
 
 if (!$loaded) {
-    throw new RuntimeException("Couldn't find composer autoload file");
+    $binName = isset($_SERVER['argv'][0]) ? $_SERVER['argv'][0] : 'cow';
+    fwrite(STDERR, "$binName was unable to located the vendor/autoload.php file.\n");
+    fwrite(STDERR, "Please make sure you've installed the composer dependencies by running composer install\n");
+    exit(1);
 }
 unset($loaded, $base, $autoload, $loaded, $path, $binName);
 $application = new \Dhensby\GitHubSync\Console\Application();
