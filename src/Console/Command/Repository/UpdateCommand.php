@@ -49,7 +49,11 @@ class UpdateCommand extends Repository
             foreach ($parentBranches as $parentBranch) {
                 if (($update = array_key_exists($parentBranch['name'], $repoBranches)) || $input->getOption('add-missing')) {
                     if (!$update) {
-                        $output->writeln('  - Adding missing branch ' . $parentBranch['name']);
+                        $output->writeln(sprintf(
+                            '  - Adding missing branch %s (%s)',
+                            $parentBranch['name'],
+                            substr($parentBranch['commit']['sha'], 0, 9)
+                        ));
                         if (!$this->getDryRun()) {
                             try {
                                 $client->api('git')->references()->create($this->getOrganisation(), $repo['name'], [
@@ -136,7 +140,7 @@ class UpdateCommand extends Repository
                             }
                         } else {
                             $output->writeln(sprintf(
-                                '  - Skipping branch %s because branch %s %s',
+                                '  - <error>Skipping branch %s because branch %s %s</error>',
                                 $repoBranch['name'],
                                 $comparedCommits['status'] == 'diverged' ? 'has' : 'is',
                                 $comparedCommits['status']
