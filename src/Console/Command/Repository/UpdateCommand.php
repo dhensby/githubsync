@@ -50,7 +50,7 @@ class UpdateCommand extends Repository
                 if (($update = array_key_exists($parentBranch['name'], $repoBranches)) || $input->getOption('add-missing')) {
                     if (!$update) {
                         $output->writeln('  - Adding missing branch ' . $parentBranch['name']);
-                        if ($this->getDryRun()) {
+                        if (!$this->getDryRun()) {
                             $client->api('git')->references()->create($this->getOrganisation(), $repo['name'], [
                                 'ref' => 'refs/heads/' . $parentBranch['name'],
                                 'sha' => $parentBranch['commit']['sha'],
