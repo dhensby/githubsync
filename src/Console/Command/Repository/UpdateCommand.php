@@ -67,9 +67,16 @@ class UpdateCommand extends Repository
                         continue;
                     }
                     $force = false;
-                    $attemptMerge = false;
+                    $attemptUpdate = false;
                     $repoBranch = $repoBranches[$parentBranch['name']];
                     if ($parentBranch['commit']['sha'] !== $repoBranch['commit']['sha']) {
+                        $output->writeln(sprintf(
+                            '  - Updating branch %s (%s...%s)',
+                            $repoBranch['name'],
+                            substr($repoBranch['commit']['sha'], 0, 9),
+                            substr($parentBranch['commit']['sha'], 0, 9)
+                        ));
+
                         try {
                             $comparedCommits = $client->api('repos')->commits()->compare(
                                 $this->getOrganisation(),
@@ -78,15 +85,8 @@ class UpdateCommand extends Repository
                                 $repoBranch['commit']['sha']
                             );
                         } catch (RuntimeException $e) {
-                            if (strpos($e->getMessage(), 'No common ancestor') !== false) {
-                                $comparedCommits = [
-                                    'status' => 'diverged',
-                                    'ahead_by' => null,
-                                    'behind_by' => null,
-                                ];
-                            } else {
-                                throw $e;
-                            }
+                            $output->writeln('    <error>Skipping due to error: ' . $e->getMessage() . '</error>');
+                            continue;
                         }
                         if (
                             $comparedCommits['status'] == 'behind' ||
@@ -97,26 +97,22 @@ class UpdateCommand extends Repository
                             if (!$force && $input->isInteractive() && ($comparedCommits['status'] == 'diverged' || $comparedCommits['status'] == 'ahead')) {
                                 $helper = $this->getHelper('question');
                                 $question = new ConfirmationQuestion(sprintf(
-                                    '  <question>Branch %s %s %s; would you like to discard your changes?</question> [y, N] ',
-                                    $repoBranch['name'],
+                                    '    <question>Branch %s %s; would you like to discard your changes?</question> [y, N] ',
                                     $comparedCommits['status'] == 'diverged' ? 'has' : 'is',
                                     $comparedCommits['status']
                                 ), false);
                                 if ($helper->ask($input, $output, $question)) {
                                     $force = true;
-                                    $attemptMerge = true;
+                                    $attemptUpdate = true;
                                 }
                             } else {
-                                $attemptMerge = true;
+                                $attemptUpdate = true;
                             }
                         }
-                        if ($attemptMerge) {
+                        if ($attemptUpdate) {
                             $message = sprintf(
-                                '  - %s branch %s (%s...%s)',
-                                $comparedCommits['status'] == 'ahead' ? 'Rewinding' : 'Updating',
-                                $repoBranch['name'],
-                                substr($repoBranch['commit']['sha'], 0, 9),
-                                substr($parentBranch['commit']['sha'], 0, 9)
+                                '    %s branch',
+                                $comparedCommits['status'] == 'ahead' ? 'Rewinding' : 'Updating'
                             );
                             if ($force) {
                                 $message .= ' (forced update)';
@@ -130,18 +126,17 @@ class UpdateCommand extends Repository
                                     ]);
                                 }
                             } catch (RuntimeException $e) {
-                                $extraMessage = '';
+                                // not a fast forward
+                                $output->writeln('    <error>Skipping due to error: ' . $e->getMessage() . '</error>');
+
                                 // not found can be a generic "permission denied" error
                                 if ($e->getMessage() === 'Not Found') {
-                                    $extraMessage = 'Make sure you are correcly authenticated with an access token with the public_repo permission';
+                                    $output->writeln('<info>Make sure you are correctly authenticated with an access token with the public_repo permission</info>');
                                 }
-                                // not a fast forward
-                                $output->writeln('    <error>' . $e->getMessage() . ' ' . $extraMessage . '</error>');
                             }
                         } else {
                             $output->writeln(sprintf(
-                                '  - <error>Skipping branch %s because branch %s %s</error>',
-                                $repoBranch['name'],
+                                '    <error>Skipping branch because branch %s %s</error>',
                                 $comparedCommits['status'] == 'diverged' ? 'has' : 'is',
                                 $comparedCommits['status']
                             ));
@@ -162,12 +157,6 @@ class UpdateCommand extends Repository
                                         '%d commit%s behind',
                                         $comparedCommits['behind_by'],
                                         $comparedCommits['behind_by'] == 1 ? '' : 's'
-                                    );
-                                }
-                                if (!isset($comparedCommits['ahead_by']) && !isset($comparedCommits['behind_by'])) {
-                                    $message = sprintf('No common ancestor (%s...%s)',
-                                        substr($repoBranch['commit']['sha'], 0, 9),
-                                        substr($parentBranch['commit']['sha'], 0, 9)
                                     );
                                 }
                                 $output->writeln('    ' . $message);
