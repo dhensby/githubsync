@@ -110,14 +110,12 @@ class UpdateCommand extends Repository
                             }
                         }
                         if ($attemptUpdate) {
-                            $message = sprintf(
-                                '    %s branch',
-                                $comparedCommits['status'] == 'ahead' ? 'Rewinding' : 'Updating'
-                            );
                             if ($force) {
-                                $message .= ' (forced update)';
+                                $output->writeln(sprintf(
+                                    '    %s branch',
+                                    $comparedCommits['status'] == 'ahead' ? 'Rewinding' : 'Force updating'
+                                ));
                             }
-                            $output->writeln($message);
                             try {
                                 if (!$this->getDryRun()) {
                                     $client->api('git')->references()->update($this->getOrganisation(), $repo['name'], 'heads/' . $repoBranch['name'], [
