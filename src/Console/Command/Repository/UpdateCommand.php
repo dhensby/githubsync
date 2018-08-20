@@ -51,10 +51,14 @@ class UpdateCommand extends Repository
                     if (!$update) {
                         $output->writeln('  - Adding missing branch ' . $parentBranch['name']);
                         if (!$this->getDryRun()) {
-                            $client->api('git')->references()->create($this->getOrganisation(), $repo['name'], [
-                                'ref' => 'refs/heads/' . $parentBranch['name'],
-                                'sha' => $parentBranch['commit']['sha'],
-                            ]);
+                            try {
+                                $client->api('git')->references()->create($this->getOrganisation(), $repo['name'], [
+                                    'ref' => 'refs/heads/' . $parentBranch['name'],
+                                    'sha' => $parentBranch['commit']['sha'],
+                                ]);
+                            } catch (RuntimeException $e) {
+                                $output->writeln('    <error>Failed to add branch: ' . $e->getMessage() . '</error>');
+                            }
                         }
                         continue;
                     }
